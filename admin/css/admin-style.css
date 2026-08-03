@@ -1,0 +1,332 @@
+/* Global Admin Styles */
+:root {
+    --sidebar-width: 260px;
+    --sidebar-bg: #0f172a;
+    --sidebar-surface: #111827;
+    --sidebar-accent: #38bdf8;
+    --sidebar-text: #e2e8f0;
+    --sidebar-muted: #94a3b8;
+    --sidebar-hover: rgba(148, 163, 184, 0.12);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f4f6f9;
+    color: #343a40;
+}
+
+/* Navbar Customization (Often used in admin pages) */
+.navbar-admin {
+    background-color: #0E5CAD;
+    color: white;
+}
+
+.navbar-admin .navbar-brand,
+.navbar-admin .nav-link {
+    color: white !important;
+}
+
+.navbar-admin .dropdown-item {
+    color: #212529 !important;
+}
+
+.navbar-admin .nav-link:hover {
+    color: #79F1A4 !important;
+}
+
+.navbar-admin .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0E5CAD !important;
+}
+
+.navbar-admin .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+.navbar-admin .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Sidebar Styles */
+#adminSidebar {
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-surface) 100%) !important;
+    color: var(--sidebar-text);
+    border-right: 1px solid rgba(148, 163, 184, 0.08);
+    box-shadow: 10px 0 30px rgba(2, 6, 23, 0.2);
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    z-index: 1040;
+    overflow-y: auto;
+    padding: 1rem 0.9rem 1.25rem;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+@media (max-width: 767.98px) {
+    #adminSidebar {
+        transform: translateX(-100%);
+    }
+
+    #adminSidebar.active {
+        transform: translateX(0);
+        box-shadow: 20px 0 60px rgba(2, 6, 23, 0.45);
+    }
+}
+
+@media (min-width: 768px) {
+    #adminSidebar {
+        transform: translateX(0);
+    }
+}
+
+#adminSidebar .sidebar-brand {
+    padding: 0.25rem 0.35rem 0.75rem;
+}
+
+#adminSidebar .brand-link {
+    color: var(--sidebar-text);
+}
+
+#adminSidebar .brand-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--sidebar-accent);
+    font-size: 1.2rem;
+}
+
+#adminSidebar .brand-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    line-height: 1.2;
+}
+
+#adminSidebar .brand-subtitle {
+    color: var(--sidebar-muted);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+}
+
+#adminSidebar .sidebar-section-title {
+    padding: 0 0.5rem;
+    margin: 0.75rem 0 0.35rem;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--sidebar-muted);
+}
+
+#adminSidebar .nav-link {
+    color: var(--sidebar-muted) !important;
+    font-weight: 500;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+#adminSidebar .nav-link:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--sidebar-text) !important;
+    transform: translateX(3px);
+}
+
+#adminSidebar .nav-link.active {
+    background: rgba(56, 189, 248, 0.18) !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25);
+}
+
+#adminSidebar .nav-link i {
+    width: 22px;
+    text-align: center;
+    display: inline-flex;
+    justify-content: center;
+    font-size: 1.05rem;
+    transition: transform 0.2s;
+}
+
+#adminSidebar .nav-link:hover i {
+    transform: scale(1.08);
+}
+
+#adminSidebar .sidebar-footer .btn {
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--sidebar-text);
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+#adminSidebar .sidebar-footer .btn:hover {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #fff;
+}
+
+/* Layout Content Adjustments */
+/* This matches the .main-content logic needed to work with the fixed sidebar */
+.main-content {
+    padding-top: 90px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 3rem;
+    min-height: 100vh;
+    margin-left: 0;
+    transition: margin-left 0.3s ease-in-out;
+    /* Match sidebar transition */
+}
+
+@media (min-width: 768px) {
+
+    /* On Desktop, push content to right */
+    .main-content {
+        margin-left: var(--sidebar-width);
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    /* Hide toggle button on desktop if needed */
+    .navbar-admin .navbar-toggler#sidebarToggleBtn {
+        display: none;
+    }
+}
+
+/* Modern Card Design (Common) */
+.card {
+    background-color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #f0f2f5;
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Soft Buttons (Common) */
+.btn-soft-primary {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-soft-primary:hover {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.btn-soft-warning {
+    background-color: rgba(241, 196, 15, 0.1);
+    color: #f1c40f;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-soft-warning:hover {
+    background-color: #f1c40f;
+    color: #fff;
+}
+
+.btn-soft-danger {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-soft-danger:hover {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.action-buttons .btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    margin: 0 2px;
+}
+
+/* Role Badges (Common) */
+.badge.bg-primary-soft {
+    background-color: rgba(78, 115, 223, 0.1);
+    color: #4e73df;
+}
+
+.badge.bg-secondary-soft {
+    background-color: rgba(133, 135, 150, 0.1);
+    color: #858796;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+    border-radius: 6px;
+}
+
+/* Form Styling (Common) */
+.form-label {
+    font-weight: 500;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    background-color: #f8f9fa;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #fff;
+    border-color: #4e73df;
+    box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.1);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+/* Adjust radius when in input-group - simplified for general use, 
+   files might have specific overrides if needed */
+.input-group .input-group-text {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group>.form-control {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}

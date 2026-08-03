@@ -1,0 +1,5 @@
+# Deny access to .env and other dotfiles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
