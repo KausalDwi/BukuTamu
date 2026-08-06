@@ -243,6 +243,56 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
         </div>
     </div>
 
+<?php elseif (isset($_GET['page']) && $_GET['page'] === 'ketersediaan'):?>
+
+    <!-- TAMPILAN GRID KETERSEDIAAN PEGAWAI -->
+    <div class="card card-tamu shadow-lg rounded-4 overflow-hidden border-0 bg-transparent">
+        <div class="card-header bg-white border-bottom pt-4 pb-3 text-center rounded-top-4 shadow-sm mb-4">
+            <h5 class="mb-0 fw-bold text-dark text-uppercase">Informasi Kehadiran Pegawai</h5>
+            <p class="small text-muted mb-0">Cek status pegawai sebelum mengisi buku tamu</p>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 g-4">
+            <?php
+            $q_pegawai = $koneksi->query("SELECT p.*, d.nama_divisi FROM pegawai p JOIN divisi d ON p.id_divisi = d.id_divisi ORDER BY d.nama_divisi, p.nama_pegawai");
+            while($p = $q_pegawai->fetch_assoc()):
+                $is_hadir = ($p['status_hadir'] === 'Hadir');
+                $is_bisa_tamu = ($p['terima_tamu'] === 'Ya');
+                
+                $border_color = $is_hadir ? 'border-success' : 'border-secondary';
+                $bg_color = $is_hadir ? 'bg-white' : 'bg-light';
+                $text_status = $is_hadir ? 'Ada di Kantor' : 'Tidak di Tempat';
+                $icon_status = $is_hadir ? '<i class="bi bi-check-circle-fill text-success fs-5"></i>' : '<i class="bi bi-x-circle-fill text-secondary fs-5"></i>';
+            ?>
+            <div class="col">
+                <div class="card h-100 <?= $border_color ?> <?= $bg_color ?> shadow-sm" style="border-width: 2px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="card-title fw-bold mb-0"><?= htmlspecialchars($p['nama_pegawai']) ?></h6>
+                            <?= $icon_status ?>
+                        </div>
+                        <p class="card-text small text-muted mb-3"><i class="bi bi-diagram-3 me-1"></i> <?= htmlspecialchars($p['nama_divisi']) ?></p>
+                        
+                        <?php if ($is_hadir && $is_bisa_tamu): ?>
+                            <span class="badge bg-primary rounded-pill w-100 py-2">Bisa Menerima Tamu</span>
+                        <?php elseif ($is_hadir && !$is_bisa_tamu): ?>
+                            <span class="badge bg-danger rounded-pill w-100 py-2">Sedang Sibuk / Rapat</span>
+                        <?php else: ?>
+                            <span class="badge bg-secondary rounded-pill w-100 py-2">Tidak Tersedia</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endwhile; ?>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="index.php" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                <i class="bi bi-pencil-square me-2"></i> Isi Buku Tamu Sekarang
+            </a>
+        </div>
+    </div>
+
 <?php else: ?>
 
     <!-- TAMPILAN FORM REGISTRASI TAMU -->

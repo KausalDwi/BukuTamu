@@ -38,6 +38,12 @@ $base_url_admin = "."; // Path relatif ke halaman admin dari dalam folder admin
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="manajemen_pegawai.php">
+                <i class="bi bi-person-lines-fill"></i>
+                <span>Manajemen Pegawai</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="<?php echo $base_url_admin; ?>/data_kepuasan.php" class="nav-link <?php echo ($current_page == 'data_kepuasan.php') ? 'active' : ''; ?>">
                 <i class="bi bi-patch-check-fill"></i>
                 <span>Data Kepuasan</span>
