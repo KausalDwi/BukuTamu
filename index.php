@@ -333,7 +333,13 @@ if (file_exists($isiPath)) {
                         </div>
                     </div>
 
-                    <div class="menu-actions">
+                    <div class="menu-actions d-flex gap-2">
+                        <!-- Tombol Baru untuk melihat Ketersediaan Pegawai -->
+                        <a href="?page=ketersediaan" class="btn btn-outline-dynamic">
+                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                            <span class="d-none d-sm-inline">Cek Pegawai</span>
+                        </a>
+
                         <?php if ($currentPage === "spk"): ?>
                             <a href="index.php" class="btn btn-outline-dynamic">
                                 <i class="bi bi-person-plus-fill"></i>

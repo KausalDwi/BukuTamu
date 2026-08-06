@@ -9,12 +9,48 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
+date_default_timezone_set('Asia/Jakarta'); // Pastikan zona waktu sesuai
+
 $page_title = "Data Kunjungan Tamu";
 $message = $_SESSION['message'] ?? ''; 
 $message_type = $_SESSION['message_type'] ?? ''; 
 unset($_SESSION['message'], $_SESSION['message_type']); 
 
 $csrf_delete_tamu_token = csrf_generate_token('delete_tamu');
+$csrf_checkout_tamu_token = csrf_generate_token('checkout_tamu'); // Token baru untuk fitur keluar
+
+// Handle Aksi Checkout (Tamu Keluar)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'checkout' && isset($_POST['id'])) {
+    if (!csrf_validate_token($_POST['csrf_token'] ?? '', 'checkout_tamu')) {
+        $_SESSION['message'] = "Permintaan tidak valid. Silakan coba lagi.";
+        $_SESSION['message_type'] = "danger";
+        header("Location: data_tamu.php");
+        exit;
+    }
+
+    $id_tamu_to_checkout = filter_var($_POST['id'], FILTER_VALIDATE_INT);
+    $waktu_keluar_sekarang = date("H:i:s");
+
+    if ($id_tamu_to_checkout) {
+        $sql_checkout = "UPDATE tb_tamu SET waktu_keluar = ? WHERE id = ?";
+        if ($stmt_checkout = $koneksi->prepare($sql_checkout)) {
+            $stmt_checkout->bind_param("si", $waktu_keluar_sekarang, $id_tamu_to_checkout);
+            if ($stmt_checkout->execute()) {
+                $_SESSION['message'] = "Jam keluar tamu berhasil dicatat.";
+                $_SESSION['message_type'] = "success";
+            } else {
+                $_SESSION['message'] = "Gagal mencatat jam keluar: " . $stmt_checkout->error;
+                $_SESSION['message_type'] = "danger";
+            }
+            $stmt_checkout->close();
+        } else {
+            $_SESSION['message'] = "Gagal menyiapkan statement checkout: " . $koneksi->error;
+            $_SESSION['message_type'] = "danger";
+        }
+        header("Location: data_tamu.php");
+        exit;
+    }
+}
 
 // Handle Aksi Hapus
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
@@ -27,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $id_tamu_to_delete = filter_var($_POST['id'], FILTER_VALIDATE_INT);
     if ($id_tamu_to_delete) {
-        // Menggunakan kolom 'id' sesuai struktur database Anda
         $sql_delete = "DELETE FROM tb_tamu WHERE id = ?";
         if ($stmt_delete = $koneksi->prepare($sql_delete)) {
             $stmt_delete->bind_param("i", $id_tamu_to_delete);
@@ -53,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Fetch semua data tamu menggunakan SELECT * agar aman dari perbedaan nama kolom
+// Fetch semua data tamu
 $tamu_list = [];
 $sql_select_tamu = "SELECT * FROM tb_tamu ORDER BY tanggal_kunjungan DESC, waktu_masuk DESC";
 
@@ -115,6 +150,8 @@ if ($result_tamu) {
             background-color: #3498db;
             border-color: #3498db;
         }
+        .btn-soft-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: none; transition: all 0.2s; }
+        .btn-soft-success:hover { background-color: #2ecc71; color: #fff; }
         .btn-soft-primary { background-color: rgba(52, 152, 219, 0.1); color: #3498db; border: none; transition: all 0.2s; }
         .btn-soft-primary:hover { background-color: #3498db; color: #fff; }
         .btn-soft-warning { background-color: rgba(241, 196, 15, 0.1); color: #f1c40f; border: none; transition: all 0.2s; }
@@ -169,12 +206,12 @@ if ($result_tamu) {
                                 <tr>
                                     <th class="border-top-0 rounded-start-2">No.</th>
                                     <th class="border-top-0">Tanggal</th>
-                                    <th class="border-top-0">Waktu</th>
+                                    <th class="border-top-0">Masuk</th>
+                                    <th class="border-top-0">Keluar</th>
                                     <th class="border-top-0">Nama Tamu</th>
                                     <th class="border-top-0">Instansi</th>
                                     <th class="border-top-0">Bertemu</th>
-                                    <th class="border-top-0">Keperluan</th>
-                                    <th class="border-top-0 rounded-end-2 text-center">Aksi</th>
+                                    <th class="border-top-0 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -184,10 +221,16 @@ if ($result_tamu) {
                                     <td>
                                         <div class="d-flex flex-column">
                                             <span class="fw-medium text-dark"><?php echo htmlspecialchars(date('d M Y', strtotime($tamu['tanggal_kunjungan']))); ?></span>
-                                            <small class="text-muted"><?php echo htmlspecialchars(date('l', strtotime($tamu['tanggal_kunjungan']))); ?></small>
                                         </div>
                                     </td>
-                                    <td><span class="badge bg-light text-dark border"><?php echo htmlspecialchars(substr($tamu['waktu_masuk'], 0, 5)); ?></span></td>
+                                    <td><span class="badge bg-primary text-white border"><?php echo htmlspecialchars(substr($tamu['waktu_masuk'], 0, 5)); ?></span></td>
+                                    <td>
+                                        <?php if (!empty($tamu['waktu_keluar'])): ?>
+                                            <span class="badge bg-secondary text-white border"><?php echo htmlspecialchars(substr($tamu['waktu_keluar'], 0, 5)); ?></span>
+                                        <?php else: ?>
+                                            <span class="badge bg-warning text-dark">Di Dalam</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.8rem; background: linear-gradient(135deg, #667eea, #764ba2) !important;">
@@ -198,17 +241,27 @@ if ($result_tamu) {
                                     </td>
                                     <td><?php echo htmlspecialchars($tamu['asal_instansi']); ?></td>
                                     <td><?php echo htmlspecialchars($tamu['bertemu_dengan']); ?></td>
-                                    <td><?php echo htmlspecialchars(mb_strimwidth($tamu['keperluan'], 0, 25, "...")); ?></td>
                                     <td class="text-center action-buttons">
-                                        <!-- Menggunakan kolom 'id' -->
+                                        
+                                        <!-- Tombol Checkout (Hanya tampil jika belum keluar) -->
+                                        <?php if (empty($tamu['waktu_keluar'])): ?>
+                                            <button type="button" class="btn btn-soft-success" data-bs-toggle="tooltip" title="Tamu Keluar" onclick="confirmCheckout(<?php echo (int) $tamu['id']; ?>)">
+                                                <i class="bi bi-box-arrow-right"></i>
+                                            </button>
+                                            <form id="checkoutForm-<?php echo (int) $tamu['id']; ?>" method="POST" class="d-none">
+                                                <input type="hidden" name="action" value="checkout">
+                                                <input type="hidden" name="id" value="<?php echo (int) $tamu['id']; ?>">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_checkout_tamu_token, ENT_QUOTES, 'UTF-8'); ?>">
+                                            </form>
+                                        <?php endif; ?>
+
                                         <a href="detail_tamu.php?id=<?php echo $tamu['id']; ?>" class="btn btn-soft-primary" data-bs-toggle="tooltip" title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="edit_tamu.php?id=<?php echo $tamu['id']; ?>" class="btn btn-soft-warning" data-bs-toggle="tooltip" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-soft-danger" title="Hapus" 
-                                                onclick="confirmDelete(<?php echo (int) $tamu['id']; ?>)">
+                                        <button type="button" class="btn btn-soft-danger" data-bs-toggle="tooltip" title="Hapus" onclick="confirmDelete(<?php echo (int) $tamu['id']; ?>)">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                         
@@ -259,6 +312,12 @@ if ($result_tamu) {
               return new bootstrap.Tooltip(tooltipTriggerEl)
             })
         });
+
+        function confirmCheckout(id) {
+            if (confirm('Tamu ini akan dicatat keluar. Lanjutkan?')) {
+                document.getElementById('checkoutForm-' + id).submit();
+            }
+        }
 
         function confirmDelete(id) {
             if (confirm('Apakah Anda yakin ingin menghapus data tamu ini? Data yang dihapus tidak dapat dikembalikan.')) {

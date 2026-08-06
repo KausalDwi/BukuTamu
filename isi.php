@@ -14,6 +14,27 @@ if (!isset($koneksi) || !($koneksi instanceof mysqli)) {
     }
 }
 
+// === AMBIL DATA DIVISI & PEGAWAI UNTUK DROPDOWN ===
+$divisi_list = [];
+$pegawai_list = [];
+if (isset($koneksi) && $koneksi instanceof mysqli) {
+    // Ambil semua divisi
+    $res_divisi = $koneksi->query("SELECT * FROM divisi ORDER BY nama_divisi ASC");
+    if ($res_divisi) {
+        while ($row = $res_divisi->fetch_assoc()) {
+            $divisi_list[] = $row;
+        }
+    }
+    
+    // Ambil pegawai yang sedang HADIR dan BISA TERIMA TAMU
+    $res_pegawai = $koneksi->query("SELECT id_pegawai, nama_pegawai, id_divisi FROM pegawai WHERE status_hadir = 'Hadir' AND terima_tamu = 'Ya' ORDER BY nama_pegawai ASC");
+    if ($res_pegawai) {
+        while ($row = $res_pegawai->fetch_assoc()) {
+            $pegawai_list[] = $row;
+        }
+    }
+}
+
 // === AWAL BLOK LOGIKA FORM REGISTRASI TAMU ===
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['nama_tamu'])) { 
     $nama_tamu = htmlspecialchars(trim($_POST['nama_tamu'] ?? ''));
@@ -21,79 +42,84 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['nama_tamu'])) {
     $jabatan = htmlspecialchars(trim($_POST['jabatan'] ?? ''));
     $no_telepon = htmlspecialchars(trim($_POST['no_telepon'] ?? ''));
     $email_tamu = htmlspecialchars(trim($_POST['email_tamu'] ?? ''));
-    $bertemu_dengan = htmlspecialchars(trim($_POST['bertemu_dengan'] ?? ''));
+    $bertemu_dengan = htmlspecialchars(trim($_POST['bertemu_dengan'] ?? '')); // Ini sekarang berisi nama_pegawai dari dropdown
     $keperluan = htmlspecialchars(trim($_POST['keperluan'] ?? ''));
     $catatan_tambahan = htmlspecialchars(trim($_POST['catatan_tambahan'] ?? ''));
-
-    $foto_tamu_filename = null;
-    $foto_processing_error = false;
     
-    // Proses Foto Base64
-    if (!empty($_POST['foto_tamu_data'])) {
-        $raw_foto_input = $_POST['foto_tamu_data'];
-        if (preg_match('/^data:image\/(\w+);base64,/', $raw_foto_input, $match)) {
-            $mime_extension = strtolower($match[1]);
-            $mime_extension = $mime_extension === 'jpeg' ? 'jpg' : $mime_extension;
-            $allowed_extensions = ['jpg', 'jpeg', 'png'];
-            if (!in_array($mime_extension, $allowed_extensions, true)) {
-                $_SESSION['gagal'] = "Format foto tidak didukung. Gunakan JPG atau PNG.";
-                $foto_processing_error = true;
-            } else {
-                $base64_data = substr($raw_foto_input, strpos($raw_foto_input, ',') + 1);
-                $base64_data = str_replace(' ', '+', $base64_data);
-                $image_binary = base64_decode($base64_data, true);
-                if ($image_binary === false) {
-                    $_SESSION['gagal'] = "Foto tidak dapat diproses. Silakan coba lagi.";
+    // Validasi Checkbox PDP
+    if (!isset($_POST['persetujuan_pdp'])) {
+        $_SESSION['gagal'] = "Anda harus menyetujui kebijakan Perlindungan Data Pribadi (PDP).";
+    } else {
+        $foto_tamu_filename = null;
+        $foto_processing_error = false;
+        
+        // Proses Foto Base64
+        if (!empty($_POST['foto_tamu_data'])) {
+            $raw_foto_input = $_POST['foto_tamu_data'];
+            if (preg_match('/^data:image\/(\w+);base64,/', $raw_foto_input, $match)) {
+                $mime_extension = strtolower($match[1]);
+                $mime_extension = $mime_extension === 'jpeg' ? 'jpg' : $mime_extension;
+                $allowed_extensions = ['jpg', 'jpeg', 'png'];
+                if (!in_array($mime_extension, $allowed_extensions, true)) {
+                    $_SESSION['gagal'] = "Format foto tidak didukung. Gunakan JPG atau PNG.";
                     $foto_processing_error = true;
                 } else {
-                    $upload_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'tamu';
-                    if (!is_dir($upload_dir) && !mkdir($upload_dir, 0775, true)) {
-                        $_SESSION['gagal'] = "Folder penyimpanan foto tidak dapat dibuat.";
+                    $base64_data = substr($raw_foto_input, strpos($raw_foto_input, ',') + 1);
+                    $base64_data = str_replace(' ', '+', $base64_data);
+                    $image_binary = base64_decode($base64_data, true);
+                    if ($image_binary === false) {
+                        $_SESSION['gagal'] = "Foto tidak dapat diproses. Silakan coba lagi.";
                         $foto_processing_error = true;
                     } else {
-                        $htaccess_path = $upload_dir . DIRECTORY_SEPARATOR . '.htaccess';
-                        if (!file_exists($htaccess_path)) {
-                            file_put_contents($htaccess_path, "php_flag engine off");
-                        }
-
-                        $random_suffix = bin2hex(random_bytes(4));
-                        $foto_tamu_filename = 'tamu_' . date('Ymd_His') . '_' . $random_suffix . '.' . $mime_extension;
-                        $foto_path = $upload_dir . DIRECTORY_SEPARATOR . $foto_tamu_filename;
-                        
-                        if (file_put_contents($foto_path, $image_binary) === false) {
-                            $_SESSION['gagal'] = "Foto gagal disimpan ke server.";
+                        $upload_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'tamu';
+                        if (!is_dir($upload_dir) && !mkdir($upload_dir, 0775, true)) {
+                            $_SESSION['gagal'] = "Folder penyimpanan foto tidak dapat dibuat.";
                             $foto_processing_error = true;
-                            $foto_tamu_filename = null;
+                        } else {
+                            $htaccess_path = $upload_dir . DIRECTORY_SEPARATOR . '.htaccess';
+                            if (!file_exists($htaccess_path)) {
+                                file_put_contents($htaccess_path, "php_flag engine off");
+                            }
+
+                            $random_suffix = bin2hex(random_bytes(4));
+                            $foto_tamu_filename = 'tamu_' . date('Ymd_His') . '_' . $random_suffix . '.' . $mime_extension;
+                            $foto_path = $upload_dir . DIRECTORY_SEPARATOR . $foto_tamu_filename;
+                            
+                            if (file_put_contents($foto_path, $image_binary) === false) {
+                                $_SESSION['gagal'] = "Foto gagal disimpan ke server.";
+                                $foto_processing_error = true;
+                                $foto_tamu_filename = null;
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    $tanggal_kunjungan = date("Y-m-d");
-    $waktu_masuk = date("H:i:s");
+        $tanggal_kunjungan = date("Y-m-d");
+        $waktu_masuk = date("H:i:s");
 
-    if (empty($nama_tamu) || empty($asal_instansi) || empty($jabatan) || empty($no_telepon) || empty($email_tamu) || empty($bertemu_dengan)) {
-        $_SESSION['gagal'] = "Semua kolom wajib diisi kecuali keperluan.";
-    } elseif ($foto_processing_error) {
-        // Error foto sudah diset di atas
-    } else {
-        $sql_tamu = "INSERT INTO tb_tamu (tanggal_kunjungan, waktu_masuk, nama_tamu, asal_instansi, jabatan, no_telepon, email_tamu, bertemu_dengan, keperluan, catatan_tambahan, foto_tamu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        if ($stmt_tamu = $koneksi->prepare($sql_tamu)) {
-            $stmt_tamu->bind_param("sssssssssss",
-                $tanggal_kunjungan, $waktu_masuk, $nama_tamu, $asal_instansi, $jabatan, $no_telepon, $email_tamu, $bertemu_dengan, $keperluan, $catatan_tambahan, $foto_tamu_filename
-            );
-            
-            if ($stmt_tamu->execute()) {
-                $_SESSION['sukses'] = "Registrasi kunjungan berhasil disimpan. Terima kasih!";
-            } else {
-                $_SESSION['gagal'] = "Gagal mengeksekusi data: " . $stmt_tamu->error;
-            }
-            $stmt_tamu->close();
+        if (empty($nama_tamu) || empty($asal_instansi) || empty($jabatan) || empty($no_telepon) || empty($email_tamu) || empty($bertemu_dengan)) {
+            $_SESSION['gagal'] = "Semua kolom wajib diisi kecuali keperluan.";
+        } elseif ($foto_processing_error) {
+            // Error foto sudah diset di atas
         } else {
-            $_SESSION['gagal'] = "Gagal menyiapkan statement SQL: " . $koneksi->error;
+            $sql_tamu = "INSERT INTO tb_tamu (tanggal_kunjungan, waktu_masuk, nama_tamu, asal_instansi, jabatan, no_telepon, email_tamu, bertemu_dengan, keperluan, catatan_tambahan, foto_tamu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            if ($stmt_tamu = $koneksi->prepare($sql_tamu)) {
+                $stmt_tamu->bind_param("sssssssssss",
+                    $tanggal_kunjungan, $waktu_masuk, $nama_tamu, $asal_instansi, $jabatan, $no_telepon, $email_tamu, $bertemu_dengan, $keperluan, $catatan_tambahan, $foto_tamu_filename
+                );
+                
+                if ($stmt_tamu->execute()) {
+                    $_SESSION['sukses'] = "Registrasi kunjungan berhasil disimpan. Terima kasih!";
+                } else {
+                    $_SESSION['gagal'] = "Gagal mengeksekusi data: " . $stmt_tamu->error;
+                }
+                $stmt_tamu->close();
+            } else {
+                $_SESSION['gagal'] = "Gagal menyiapkan statement SQL: " . $koneksi->error;
+            }
         }
     }
 
@@ -104,12 +130,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['nama_tamu'])) {
         unset($_SESSION['old_tamu']);
     }
 
-    // Gunakan JavaScript redirect alih-alih header() agar tidak terkena error headers already sent
     echo "<script>window.location.href='index.php';</script>";
     exit;
 }
 // === AKHIR BLOK LOGIKA FORM REGISTRASI TAMU ===
-
 
 // === AWAL BLOK LOGIKA FORM KEPUASAN (SPK) ===
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_kepuasan'])) { 
@@ -273,12 +297,30 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 <div class="mb-4">
                      <h6 class="text-uppercase text-primary fw-bold small mb-3 border-bottom pb-2">Detail Kunjungan</h6>
                      <div class="row g-3">
-                        <div class="col-12">
-                             <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="bi bi-people fs-5"></i></span>
-                                <input type="text" class="form-control bg-light border-0 py-3" id="bertemu_dengan" name="bertemu_dengan" placeholder="Ingin Bertemu Siapa?" value="<?= htmlspecialchars($old_tamu['bertemu_dengan'] ?? '') ?>" required>
+                        
+                        <!-- Pilihan Divisi -->
+                        <div class="col-md-6">
+                            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="bi bi-diagram-3 fs-5"></i></span>
+                                <select class="form-select bg-light border-0 py-3" id="pilih_divisi" required>
+                                    <option value="" disabled selected>Pilih Divisi Tujuan...</option>
+                                    <?php foreach($divisi_list as $div): ?>
+                                        <option value="<?= $div['id_divisi'] ?>"><?= htmlspecialchars($div['nama_divisi']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
+
+                        <!-- Pilihan Pegawai yang Available -->
+                        <div class="col-md-6">
+                             <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="bi bi-person-check fs-5"></i></span>
+                                <select class="form-select bg-light border-0 py-3" id="bertemu_dengan" name="bertemu_dengan" required disabled>
+                                    <option value="" disabled selected>Pilih Pegawai...</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="col-12">
                              <div class="input-group shadow-sm rounded-3 overflow-hidden">
                                 <span class="input-group-text bg-white border-0 ps-3 text-muted pt-3"><i class="bi bi-card-text fs-5"></i></span>
@@ -289,7 +331,7 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 </div>
 
                 <!-- Section Camera Widget -->
-                <div class="mb-5">
+                <div class="mb-4">
                     <h6 class="text-uppercase text-primary fw-bold small mb-3 border-bottom pb-2">Foto Identitas</h6>
                     <div class="camera-widget bg-light rounded-4 p-3 border border-2 border-dashed text-center">
                         <div class="camera-display position-relative overflow-hidden rounded-4 shadow-sm mb-3 bg-white" style="min-height: 250px; display: flex; align-items: center; justify-content: center;">
@@ -314,18 +356,65 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                     </div>
                 </div>
 
+                <!-- Checkbox PDP -->
+                <div class="form-check mb-4 p-3 border rounded-3 shadow-sm" style="background-color: #f8f9fa;">
+                    <input class="form-check-input ms-1 mt-1" type="checkbox" name="persetujuan_pdp" id="pdpCheck" required>
+                    <label class="form-check-label ms-2 small text-muted" for="pdpCheck">
+                        <strong class="text-dark">Persetujuan Perlindungan Data Pribadi (PDP)</strong><br>
+                        Saya menyetujui bahwa data diri beserta foto yang saya berikan akan disimpan dan diproses oleh Diskominfo semata-mata untuk keperluan pendataan dan keamanan tamu sesuai dengan regulasi yang berlaku.
+                    </label>
+                </div>
+
                 <div class="d-grid gap-3">
                     <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-lg" style="background: var(--primary-gradient); border: none;">
-                        SIMPAN <i class="bi bi-chevron-right ms-2 small"></i>
+                        SIMPAN BUKU TAMU <i class="bi bi-chevron-right ms-2 small"></i>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Script Kamera Modern -->
+    <!-- Script Kamera & Dropdown Dinamis -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            
+            // --- LOGIKA DROPDOWN DINAMIS ---
+            // Data pegawai dari PHP di-passing ke JavaScript
+            const dataPegawai = <?= json_encode($pegawai_list) ?>;
+            const selectDivisi = document.getElementById('pilih_divisi');
+            const selectPegawai = document.getElementById('bertemu_dengan');
+
+            selectDivisi.addEventListener('change', function() {
+                const idDivisiTerpilih = this.value;
+                
+                // Kosongkan opsi pegawai
+                selectPegawai.innerHTML = '<option value="" disabled selected>Pilih Pegawai...</option>';
+                
+                // Filter pegawai berdasarkan divisi
+                const pegawaiDifilter = dataPegawai.filter(p => p.id_divisi == idDivisiTerpilih);
+
+                if (pegawaiDifilter.length > 0) {
+                    pegawaiDifilter.forEach(p => {
+                        const opt = document.createElement('option');
+                        // Menyimpan nama pegawai (atau ubah ke id_pegawai jika database tb_tamu diperbarui)
+                        opt.value = p.nama_pegawai; 
+                        opt.textContent = p.nama_pegawai;
+                        selectPegawai.appendChild(opt);
+                    });
+                    selectPegawai.disabled = false;
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = "";
+                    opt.disabled = true;
+                    opt.selected = true;
+                    opt.textContent = "-- Tidak ada pegawai di kantor --";
+                    selectPegawai.appendChild(opt);
+                    selectPegawai.disabled = true;
+                }
+            });
+
+
+            // --- LOGIKA KAMERA ---
             const startBtn = document.getElementById('btnMulaiKamera');
             const captureBtn = document.getElementById('btnAmbilFoto');
             const retakeBtn = document.getElementById('btnUlangFoto');
