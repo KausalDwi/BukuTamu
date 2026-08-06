@@ -50,11 +50,6 @@ $currentPage = $_GET['page'] ?? 'beranda';
 
 // PANGGIL FILE isi.php DI ATAS SINI AGAR LOGIKA POST & REDIRECT BERJALAN SEBELUM HTML DIRENDER
 $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
-if (file_exists($isiPath)) {
-    // Kita buffer output dari isi.php agar bagian logika (PHP) tereksekusi duluan
-    // sementara bagian tampilan HTML-nya bisa diletakkan di dalam tag <section class="form-section">
-    // (Namun jika isi.php sudah diatur agar bagian logika dipisah dari HTML, kita bisa include langsung di sini atau di bawah)
-}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -76,10 +71,8 @@ if (file_exists($isiPath)) {
             --bright-gradient-end: rgb(61, 64, 153);
             --bright-gradient-alt-start: #FF9A70;
             --bright-gradient-alt-end: #FD5E53;
-
             --primary-color: #0E5CAD;
             --accent-color: #FF9A70;
-
             --neutral-lightest: #F8F9FA;
             --neutral-lighter: #E9ECEF;
             --neutral-light: #DEE2E6;
@@ -87,26 +80,21 @@ if (file_exists($isiPath)) {
             --neutral-dark: #495057;
             --neutral-darker: #343A40;
             --neutral-darkest: #212529;
-
             --gradient-main: linear-gradient(135deg, var(--bright-gradient-start) 0%, var(--bright-gradient-end) 100%);
             --gradient-accent: linear-gradient(135deg, var(--bright-gradient-alt-start) 0%, var(--bright-gradient-alt-end) 100%);
             --gradient-border: linear-gradient(90deg, transparent, var(--primary-color), transparent);
             --primary-gradient: var(--gradient-main);
-
             --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.08);
             --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.1);
             --shadow-strong: 0 12px 35px rgba(0, 0, 0, 0.12);
-
             --radius-sm: 0.375rem;
             --radius-md: 0.75rem;
             --radius-lg: 1.25rem;
             --radius-xl: 2rem;
             --radius-full: 9999px;
-
             --transition-fast: all 0.2s ease-in-out;
             --transition-medium: all 0.35s ease-in-out;
         }
-
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--neutral-lightest);
@@ -114,14 +102,12 @@ if (file_exists($isiPath)) {
             line-height: 1.7;
             font-weight: 400;
         }
-
         .app-container {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
         }
-
         .app-header {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
@@ -134,7 +120,6 @@ if (file_exists($isiPath)) {
             z-index: 1000;
             overflow: hidden;
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -143,13 +128,11 @@ if (file_exists($isiPath)) {
             position: relative;
             z-index: 1;
         }
-
         .logo-container {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
-
         .company-logo {
             width: 50px;
             height: 50px;
@@ -158,7 +141,6 @@ if (file_exists($isiPath)) {
             border: 2px solid var(--primary-color);
             box-shadow: var(--shadow-soft);
         }
-
         .logo-badge {
             width: 58px;
             height: 58px;
@@ -169,19 +151,16 @@ if (file_exists($isiPath)) {
             background: rgba(78, 115, 223, 0.12);
             border: 1px solid rgba(78, 115, 223, 0.25);
         }
-
         .company-title h1 {
             font-size: 1.25rem;
             font-weight: 700;
             color: var(--primary-color);
         }
-
         .company-title small {
             font-size: 0.8rem;
             color: var(--neutral-dark);
             font-weight: 500;
         }
-
         .header-chip {
             display: inline-flex;
             align-items: center;
@@ -193,7 +172,6 @@ if (file_exists($isiPath)) {
             font-size: 0.75rem;
             font-weight: 600;
         }
-
         .menu-actions .btn {
             border-radius: var(--radius-full);
             padding: 0.6rem 1.2rem;
@@ -205,35 +183,29 @@ if (file_exists($isiPath)) {
             align-items: center;
             gap: 0.5rem;
         }
-
         .menu-actions .btn-gradient {
             background: var(--gradient-main);
             color: white;
             border: none;
         }
-
         .menu-actions .btn-outline-dynamic {
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
         }
-
         .main-content {
             flex: 1;
             padding: 2.5rem 0;
         }
-
         .content-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 2.5rem;
         }
-
         @media (min-width: 992px) {
             .content-grid {
                 grid-template-columns: 2fr 3fr;
             }
         }
-
         .welcome-section {
             background: var(--gradient-main);
             color: white;
@@ -246,7 +218,6 @@ if (file_exists($isiPath)) {
             flex-direction: column;
             box-shadow: var(--shadow-strong);
         }
-
         .form-section {
             background: white;
             border-radius: var(--radius-lg);
@@ -254,13 +225,11 @@ if (file_exists($isiPath)) {
             box-shadow: var(--shadow-medium);
             border: 1px solid var(--neutral-lighter);
         }
-
         .section-header {
             position: relative;
             padding-bottom: 1rem;
             margin-bottom: 2rem;
         }
-
         .section-header::after {
             content: '';
             position: absolute;
@@ -271,12 +240,10 @@ if (file_exists($isiPath)) {
             background: var(--gradient-accent);
             border-radius: var(--radius-full);
         }
-
         .section-header h2 {
             font-weight: 700;
             color: var(--primary-color);
         }
-
         .app-footer {
             padding: 2.25rem 0 2rem;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -284,19 +251,16 @@ if (file_exists($isiPath)) {
             font-size: 0.875rem;
             border-top: 1px solid rgba(148, 163, 184, 0.2);
         }
-
         .app-footer .footer-inner {
             display: grid;
             gap: 1.5rem;
             align-items: center;
         }
-
         .app-footer .footer-brand {
             display: flex;
             align-items: center;
             gap: 0.85rem;
         }
-
         .app-footer .footer-logo {
             width: 44px;
             height: 44px;
@@ -377,7 +341,15 @@ if (file_exists($isiPath)) {
                 <section class="form-section animate__animated animate__fadeInRight">
                     <div class="section-header">
                         <h2 class="h3 mb-0">
-                            <?= $currentPage === "spk" ? 'Formulir Kepuasan Layanan' : 'Registrasi Kunjungan Tamu' ?>
+                            <?php 
+                            if ($currentPage === "spk") {
+                                echo 'Formulir Kepuasan Layanan';
+                            } elseif ($currentPage === "ketersediaan") {
+                                echo 'Ketersediaan Pegawai';
+                            } else {
+                                echo 'Registrasi Kunjungan Tamu';
+                            }
+                            ?>
                         </h2>
                     </div>
 
