@@ -23,8 +23,8 @@ $total_tamu_keseluruhan = 0;
 // Pastikan $koneksi ada dan merupakan objek mysqli yang valid
 if (isset($koneksi) && $koneksi instanceof mysqli) {
 
-    // 1. Total Tamu Hari Ini
-    $sql_tamu_today = "SELECT COUNT(*) as total FROM tb_tamu WHERE tanggal_kunjungan = CURDATE()";
+    // 1. Total Tamu Hari Ini (Dipastikan difilter murni berdasarkan tanggal hari ini)
+    $sql_tamu_today = "SELECT COUNT(*) as total FROM tb_tamu WHERE DATE(tanggal_kunjungan) = CURDATE()";
     $result_tamu_today = $koneksi->query($sql_tamu_today);
     if ($result_tamu_today) {
         $total_tamu_hari_ini = $result_tamu_today->fetch_assoc()['total'] ?? 0;
@@ -33,7 +33,7 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     }
 
     // 2. Total Survei Hari Ini
-    $sql_survei_today = "SELECT COUNT(*) as total FROM tb_kepuasan WHERE tanggal_survei = CURDATE()";
+    $sql_survei_today = "SELECT COUNT(*) as total FROM tb_kepuasan WHERE DATE(tanggal_survei) = CURDATE()";
     $result_survei_today = $koneksi->query($sql_survei_today);
     if ($result_survei_today) {
         $total_survei_hari_ini = $result_survei_today->fetch_assoc()['total'] ?? 0;
@@ -60,29 +60,21 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     }
 
     // 5. Skor Kepuasan (Rata-rata rating)
-    // Asumsi: rata-rata dari semua kolom nilai untuk semua data
     $sql_avg_kepuasan = "SELECT AVG((nilai_pelayanan + nilai_fasilitas + nilai_keramahan + nilai_kecepatan) / 4) as avg_score FROM tb_kepuasan";
     $result_avg = $koneksi->query($sql_avg_kepuasan);
     $skor_kepuasan = 0;
     if ($result_avg) {
         $row_avg = $result_avg->fetch_assoc();
-        $skor_kepuasan = number_format((float)$row_avg['avg_score'], 1); // 1 desimal, misal 4.5
+        $skor_kepuasan = number_format((float)($row_avg['avg_score'] ?? 0), 1);
     }
 
     // 6. Data Tren (7 Hari Terakhir)
-    $list_tanggal = [];
-    $list_jumlah = [];
-    
-    // Generate dates for last 7 days to ensure 0 values are represented if used in array mapping, 
-    // but simpler approach is to trust query and fill gaps in JS or PHP. 
-    // Here we just fetch what exists.
     $sql_trend = "SELECT DATE(tanggal_kunjungan) as tgl, COUNT(*) as jumlah 
                   FROM tb_tamu 
                   WHERE tanggal_kunjungan >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
                   GROUP BY tgl ORDER BY tgl ASC";
     $result_trend = $koneksi->query($sql_trend);
 
-    // Siapkan array kosong 7 hari terakhir
     $data_trend = [];
     for ($i = 6; $i >= 0; $i--) {
         $d = date('Y-m-d', strtotime("-$i days"));
@@ -95,18 +87,9 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
         }
     }
     
-    // Konversi ke index array untuk JS
     $labels_chart = array_keys($data_trend);
     $data_chart = array_values($data_trend);
-
-    // $koneksi->close(); // Tidak perlu ditutup di sini jika masih ada potensi penggunaan di partials atau bagian lain.
-                       // PHP akan menutupnya otomatis.
-} else {
-    // Handle jika $koneksi tidak tersedia (seharusnya tidak terjadi jika require_once berhasil)
-    error_log("Variabel koneksi tidak tersedia atau bukan instance mysqli di admin/index.php");
-    // Anda bisa set pesan error di sini jika mau
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -119,9 +102,8 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="css/admin-style.css" rel="stylesheet">
     <style>
-        /* Stat Cards Specifics */
         .card-admin-stat {
-            border-left: 0px solid transparent; /* Optional accent */
+            border-left: 0px solid transparent;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -170,12 +152,8 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
 </head>
 <body>
     <?php
-    if (file_exists(__DIR__ . '/_partials/navbar.php')) {
-        include_once __DIR__ . '/_partials/navbar.php';
-    }
-    if (file_exists(__DIR__ . '/_partials/sidebar.php')) {
-        include_once __DIR__ . '/_partials/sidebar.php';
-    }
+    if (file_exists(__DIR__ . '/_partials/navbar.php')) { include_once __DIR__ . '/_partials/navbar.php'; }
+    if (file_exists(__DIR__ . '/_partials/sidebar.php')) { include_once __DIR__ . '/_partials/sidebar.php'; }
     ?>
 
     <main class="main-content">
@@ -185,8 +163,6 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
                     <h1 class="h3 fw-bold text-dark mb-1"><?php echo htmlspecialchars($page_title); ?></h1>
                      <p class="text-muted mb-0">Ringkasan aktivitas dan statistik terbaru.</p>
                 </div>
-                
-                 <!-- Breadcrumb (Optional) or Actions -->
             </div>
             
             <div class="row">
@@ -286,7 +262,6 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
                      </div>
                  </div>
                  <div class="col-xl-4 col-lg-5">
-                      <!-- Bisa ditambahkan widget lain di sini, misal pie chart jenis keperluan -->
                       <div class="card shadow mb-4">
                          <div class="card-header py-3">
                              <h6 class="m-0 font-weight-bold text-primary">Informasi Cepat</h6>
@@ -304,7 +279,6 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
                 <h4>Aktivitas Terbaru:</h4>
                 <div class="list-group">
                     <?php
-                        // Ambil 3 tamu terakhir sebagai contoh aktivitas
                         $sql_aktivitas = "SELECT nama_tamu, keperluan, waktu_masuk, tanggal_kunjungan FROM tb_tamu ORDER BY tanggal_kunjungan DESC, waktu_masuk DESC LIMIT 3";
                         $result_aktivitas = isset($koneksi) ? $koneksi->query($sql_aktivitas) : null;
                         if ($result_aktivitas && $result_aktivitas->num_rows > 0) {
@@ -329,11 +303,9 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Toggle sidebar di mobile
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn'); 
         const adminSidebar = document.getElementById('adminSidebar'); 
 
@@ -343,10 +315,8 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
             });
         }
 
-        // --- Chart.js Implementasi ---
         const ctx = document.getElementById('myAreaChart');
         if (ctx) {
-            // Data dari PHP
             const labels = <?php echo json_encode($labels_chart); ?>;
             const data = <?php echo json_encode($data_chart); ?>;
 
@@ -366,63 +336,11 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
                 },
                 options: {
                     maintainAspectRatio: false,
-                    layout: {
-                        padding: {
-                            left: 10,
-                            right: 25,
-                            top: 25,
-                            bottom: 0
-                        }
-                    },
                     scales: {
-                        x: {
-                            grid: {
-                                display: false,
-                                drawBorder: false
-                            },
-                            ticks: {
-                                maxTicksLimit: 7
-                            }
-                        },
-                        y: {
-                            ticks: {
-                                maxTicksLimit: 5,
-                                padding: 10,
-                                callback: function(value, index, values) {
-                                    return value; // Format angka jika perlu
-                                }
-                            },
-                            grid: {
-                                color: "rgb(234, 236, 244)",
-                                zeroLineColor: "rgb(234, 236, 244)",
-                                drawBorder: false,
-                                borderDash: [2],
-                                zeroLineBorderDash: [2]
-                            }
-                        },
+                        x: { grid: { display: false } },
+                        y: { ticks: { maxTicksLimit: 5 } }
                     },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: "rgb(255,255,255)",
-                            bodyColor: "#858796",
-                            titleMarginBottom: 10,
-                            titleColor: '#6e707e',
-                            titleFont: {
-                                size: 14,
-                            },
-                            borderColor: '#dddfeb',
-                            borderWidth: 1,
-                            xPadding: 15,
-                            yPadding: 15,
-                            displayColors: false,
-                            intersect: false,
-                            mode: 'index',
-                            caretPadding: 10,
-                        }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }

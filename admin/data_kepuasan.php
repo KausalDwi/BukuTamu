@@ -46,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $id_kepuasan_to_delete = filter_var($_POST['id'], FILTER_VALIDATE_INT);
     if ($id_kepuasan_to_delete) {
-        $sql_delete = "DELETE FROM tb_kepuasan WHERE id_kepuasan = ?";
+        // Perbaikan id_kepuasan menjadi id
+        $sql_delete = "DELETE FROM tb_kepuasan WHERE id = ?";
         if ($stmt_delete = $koneksi->prepare($sql_delete)) {
             $stmt_delete->bind_param("i", $id_kepuasan_to_delete);
             if ($stmt_delete->execute()) {
@@ -68,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Fetch Data
 $survei_list = [];
-$sql_select_survei = "SELECT id_kepuasan, id_tamu_fk, nama_responden, tanggal_survei, waktu_survei, 
+// Perbaikan id_kepuasan menjadi id
+$sql_select_survei = "SELECT id, id_tamu_fk, nama_responden, tanggal_survei, waktu_survei, 
                              nilai_pelayanan, nilai_fasilitas, nilai_keramahan, nilai_kecepatan, saran_masukan 
                       FROM tb_kepuasan 
                       ORDER BY tanggal_survei DESC, waktu_survei DESC";
@@ -217,12 +219,14 @@ if ($result_survei && $result_survei->num_rows > 0) {
                                         <?php echo htmlspecialchars($survei['saran_masukan'] ?: '-'); ?>
                                     </td>
                                     <td class="text-center action-buttons">
-                                        <button class="btn btn-soft-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#detailModal<?php echo $survei['id_kepuasan']; ?>" title="Lihat Detail">
+                                        <!-- Perbaikan memanggil variabel id -->
+                                        <button class="btn btn-soft-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#detailModal<?php echo $survei['id']; ?>" title="Lihat Detail">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Hapus data survei ini?');">
                                             <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?php echo (int) $survei['id_kepuasan']; ?>">
+                                            <!-- Perbaikan memanggil variabel id -->
+                                            <input type="hidden" name="id" value="<?php echo (int) $survei['id']; ?>">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_delete_kepuasan_token, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-soft-danger btn-sm" title="Hapus">
                                                 <i class="bi bi-trash"></i>
@@ -230,7 +234,8 @@ if ($result_survei && $result_survei->num_rows > 0) {
                                         </form>
 
                                         <!-- Simple Modal for Detail -->
-                                        <div class="modal fade" id="detailModal<?php echo $survei['id_kepuasan']; ?>" tabindex="-1" aria-hidden="true">
+                                        <!-- Perbaikan memanggil variabel id -->
+                                        <div class="modal fade" id="detailModal<?php echo $survei['id']; ?>" tabindex="-1" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content border-0 shadow">
                                                     <div class="modal-header border-bottom-0">

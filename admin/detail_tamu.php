@@ -15,13 +15,13 @@ $error_message = '';
 if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     $id_tamu_to_view = $_GET['id'];
 
-    // Fetch detail data tamu
-    $sql_select_detail = "SELECT id_tamu, tanggal_kunjungan, waktu_masuk, nama_tamu, 
+    // Fetch detail data tamu (Perbaikan id_tamu menjadi id di SELECT dan WHERE)
+    $sql_select_detail = "SELECT id, tanggal_kunjungan, waktu_masuk, nama_tamu, 
                                  asal_instansi, jabatan, no_telepon, email_tamu, 
                                  bertemu_dengan, keperluan, catatan_tambahan, 
                                  foto_tamu, tanda_tangan, status_keluar, waktu_keluar, created_at 
                           FROM tb_tamu 
-                          WHERE id_tamu = ?";
+                          WHERE id = ?";
     
     if ($stmt_detail = $koneksi->prepare($sql_select_detail)) {
         $stmt_detail->bind_param("i", $id_tamu_to_view);
@@ -62,7 +62,6 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="css/admin-style.css" rel="stylesheet">
     <style>
-
         /* Detail Styling */
         .detail-item { margin-bottom: 1rem; }
         .detail-label {
@@ -122,7 +121,7 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
                     <div class="d-flex align-items-center">
                         <h1 class="h3 fw-bold text-dark mb-0 me-3">Detail Tamu</h1>
                         <span class="badge rounded-pill bg-light text-dark border">
-                            ID: #<?php echo str_pad($tamu_detail['id_tamu'], 4, '0', STR_PAD_LEFT); ?>
+                            ID: #<?php echo str_pad($tamu_detail['id'], 4, '0', STR_PAD_LEFT); ?>
                         </span>
                     </div>
                 </div>
@@ -130,15 +129,14 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
                     <a href="data_tamu.php" class="btn btn-light shadow-sm border text-muted">
                         <i class="bi bi-arrow-left me-2"></i> Kembali
                     </a>
-                    <a href="export_tamu.php?id=<?php echo $tamu_detail['id_tamu']; ?>&action=print" target="_blank" class="btn btn-primary text-white shadow-sm border-0 d-flex align-items-center px-3" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
-                        <i class="bi bi-printer-fill me-2"></i> Cetak PDF
+                    <a href="export_tamu_pdf.php" class="btn btn-danger text-white shadow-sm border-0 d-flex align-items-center" style="background: linear-gradient(135deg, #e74c3c, #c0392b); border-radius: 10px;">
+                        <i class="bi bi-file-earmark-pdf-fill me-2"></i> Ekspor PDF
                     </a>
                 </div>
             </div>
 
             <?php if ($tamu_detail): ?>
             <div class="row g-4">
-                <!-- Left Column: Photo & Status -->
                 <div class="col-lg-4">
                     <div class="card shadow-sm h-100">
                         <div class="card-body p-4 text-center">
@@ -189,12 +187,11 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
                     </div>
                 </div>
 
-                <!-- Right Column: Details -->
                 <div class="col-lg-8">
                     <div class="card shadow-sm">
                         <div class="card-header pt-4 px-4 bg-white border-bottom-0 d-flex justify-content-between">
                             <h5 class="mb-0 fw-bold text-secondary">Informasi Lengkap</h5>
-                            <a href="edit_tamu.php?id=<?php echo $tamu_detail['id_tamu']; ?>" class="btn btn-sm btn-soft-warning text-warning" style="background-color: rgba(246, 194, 62, 0.1);">
+                            <a href="edit_tamu.php?id=<?php echo $tamu_detail['id']; ?>" class="btn btn-sm btn-soft-warning text-warning" style="background-color: rgba(246, 194, 62, 0.1);">
                                 <i class="bi bi-pencil-square me-1"></i> Edit Data
                             </a>
                         </div>
