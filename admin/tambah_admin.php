@@ -30,15 +30,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (strlen($password) < 6 && !empty($password)) $errors[] = "Password minimal 6 karakter.";
     if (!in_array($role, ['admin', 'superadmin'])) $errors[] = "Role tidak valid.";
 
-    // Cek apakah username sudah ada
+    // Cek apakah username sudah ada (Perbaikan id_admin menjadi id)
     if (empty($errors) && !empty($username)) {
-        $sql_check_username = "SELECT id_admin FROM tb_admin WHERE username = ?";
+        $sql_check_username = "SELECT id FROM tb_admin WHERE username = ?";
         if ($stmt_check = $koneksi->prepare($sql_check_username)) {
             $stmt_check->bind_param("s", $username);
             $stmt_check->execute();
             $stmt_check->store_result();
             if ($stmt_check->num_rows > 0) {
-                $errors[] = "Username sudha digunakan. Silakan pilih username lain.";
+                $errors[] = "Username sudah digunakan. Silakan pilih username lain.";
             }
             $stmt_check->close();
         }
@@ -77,7 +77,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="css/admin-style.css" rel="stylesheet">
-    <style>
 </head>
 <body>
     <?php

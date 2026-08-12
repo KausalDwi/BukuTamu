@@ -13,9 +13,9 @@ $admin_id_saya = $_SESSION['admin_id']; // ID admin yang sedang login
 $errors = [];
 $success_message = '';
 
-// Ambil data admin saat ini
+// Ambil data admin saat ini (Perbaikan dari id_admin menjadi id)
 $current_admin_data = null;
-$sql_get_mydata = "SELECT nama_lengkap, username, email FROM tb_admin WHERE id_admin = ?";
+$sql_get_mydata = "SELECT nama_lengkap, username, email FROM tb_admin WHERE id = ?";
 if ($stmt_mydata = $koneksi->prepare($sql_get_mydata)) {
     $stmt_mydata->bind_param("i", $admin_id_saya);
     $stmt_mydata->execute();
@@ -23,22 +23,20 @@ if ($stmt_mydata = $koneksi->prepare($sql_get_mydata)) {
     if ($result_mydata->num_rows === 1) {
         $current_admin_data = $result_mydata->fetch_assoc();
     } else {
-        // Seharusnya tidak terjadi jika sesi valid
         session_destroy();
         header("Location: login.php?message=Sesi tidak valid, silakan login kembali.");
         exit;
     }
     $stmt_mydata->close();
 } else {
-    die("Gagal menyiapkan data profil."); // Error fatal
+    die("Gagal menyiapkan data profil.");
 }
 
 $nama_lengkap = $current_admin_data['nama_lengkap'];
-$username = $current_admin_data['username']; // Username tidak diedit di sini
+$username = $current_admin_data['username'];
 $email = $current_admin_data['email'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Cek apakah ini submit untuk detail atau password
     if (isset($_POST['submit_detail'])) {
         $nama_lengkap_new = trim($_POST['nama_lengkap']);
         $email_new = trim($_POST['email']);
@@ -50,9 +48,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors[] = "Format email tidak valid.";
         }
 
-        // Cek apakah email baru (jika diubah & tidak kosong) sudah digunakan oleh admin lain
+        // Cek email duplikat (Perbaikan dari id_admin menjadi id)
         if (empty($errors) && !empty($email_new) && $email_new !== $current_admin_data['email']) {
-            $sql_check_email = "SELECT id_admin FROM tb_admin WHERE email = ? AND id_admin != ?";
+            $sql_check_email = "SELECT id FROM tb_admin WHERE email = ? AND id != ?";
             if ($stmt_check_email = $koneksi->prepare($sql_check_email)) {
                 $stmt_check_email->bind_param("si", $email_new, $admin_id_saya);
                 $stmt_check_email->execute();
@@ -64,15 +62,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-
         if (empty($errors)) {
-            $sql_update_detail = "UPDATE tb_admin SET nama_lengkap = ?, email = ? WHERE id_admin = ?";
+            // Perbaikan dari id_admin menjadi id
+            $sql_update_detail = "UPDATE tb_admin SET nama_lengkap = ?, email = ? WHERE id = ?";
             if ($stmt_update = $koneksi->prepare($sql_update_detail)) {
                 $stmt_update->bind_param("ssi", $nama_lengkap_new, $email_new, $admin_id_saya);
                 if ($stmt_update->execute()) {
-                    $_SESSION['admin_nama_lengkap'] = $nama_lengkap_new; // Update session
+                    $_SESSION['admin_nama_lengkap'] = $nama_lengkap_new;
                     $success_message = "Detail profil berhasil diperbarui.";
-                    // Re-fetch data untuk menampilkan yang terbaru di form
                     $nama_lengkap = $nama_lengkap_new;
                     $email = $email_new;
                 } else {
@@ -92,8 +89,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($password_lama) || empty($password_baru) || empty($konfirmasi_password_baru)) {
             $errors[] = "Semua field password wajib diisi untuk mengubah password.";
         } else {
-            // Ambil hash password saat ini dari database
-            $sql_get_pass = "SELECT password_hash FROM tb_admin WHERE id_admin = ?";
+            // Perbaikan dari id_admin menjadi id
+            $sql_get_pass = "SELECT password_hash FROM tb_admin WHERE id = ?";
             if ($stmt_get_pass = $koneksi->prepare($sql_get_pass)) {
                 $stmt_get_pass->bind_param("i", $admin_id_saya);
                 $stmt_get_pass->execute();
@@ -102,24 +99,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt_get_pass->close();
 
                 if ($admin_pass_data && password_verify($password_lama, $admin_pass_data['password_hash'])) {
-                    // Password lama cocok
                     if ($password_baru !== $konfirmasi_password_baru) {
                         $errors[] = "Password baru dan konfirmasi password baru tidak cocok.";
                     } elseif (strlen($password_baru) < 6) {
                         $errors[] = "Password baru minimal 6 karakter.";
                     } else {
-                        // Semua valid, hash password baru dan update
                         $password_hash_baru = password_hash($password_baru, PASSWORD_DEFAULT);
-                        $sql_update_pass = "UPDATE tb_admin SET password_hash = ? WHERE id_admin = ?";
+                        // Perbaikan dari id_admin menjadi id
+                        $sql_update_pass = "UPDATE tb_admin SET password_hash = ? WHERE id = ?";
                         if ($stmt_update_pass = $koneksi->prepare($sql_update_pass)) {
                             $stmt_update_pass->bind_param("si", $password_hash_baru, $admin_id_saya);
                             if ($stmt_update_pass->execute()) {
-                                $success_message = "Password berhasil diubah. Silakan login kembali jika diperlukan.";
-                                // Opsional: Hancurkan sesi dan paksa login ulang untuk keamanan
-                                // unset($_SESSION['admin_logged_in']);
-                                // session_destroy();
-                                // header("Location: login.php?message=Password berhasil diubah, silakan login ulang.");
-                                // exit;
+                                $success_message = "Password berhasil diubah.";
                             } else {
                                 $errors[] = "Gagal mengubah password: " . $stmt_update_pass->error;
                             }
@@ -148,7 +139,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="css/admin-style.css" rel="stylesheet">
-    <style>
 </head>
 <body>
     <?php
