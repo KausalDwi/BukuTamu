@@ -192,6 +192,13 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
         <div class="card-body p-4 p-md-5">
             <form id="formKepuasan" method="POST" action="index.php?page=spk">
                 <input type="hidden" name="submit_kepuasan" value="1"> 
+                if (isset($_SESSION['gagal'])) {
+    echo '<div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> ' . $_SESSION['gagal'] . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
+    unset($_SESSION['gagal']); // Hapus pesan setelah ditampilkan
+}
                 
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-uppercase text-muted">Identitas Anda</label>
@@ -200,6 +207,7 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                         <input type="text" class="form-control bg-light border-start-0 py-3" name="nama_responden" placeholder="Nama Anda (Opsional)">
                     </div>
                 </div>
+
 
                 <div class="row g-3 mb-4">
                      <?php 
@@ -235,7 +243,9 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-sm">KIRIM SURVEI</button>
+                    <button type="submit" name="submit_tamu" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm" style="background: var(--primary-gradient); border: none;">
+                        <i class="bi bi-send-fill me-2"></i> Kirim Kunjungan
+                    </button>
                     <a href="index.php" class="btn btn-link text-muted mt-3 text-decoration-none small text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Form Tamu</a>
                 </div>
             </form>
@@ -423,8 +433,8 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 </div>
 
                 <div class="d-grid gap-3">
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-lg" style="background: var(--primary-gradient); border: none;">
-                        SIMPAN BUKU TAMU <i class="bi bi-chevron-right ms-2 small"></i>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-lg text-white" style="background: var(--primary-color); border: none;">
+                        <i class="bi bi-send-fill me-2"></i> SIMPAN BUKU TAMU <i class="bi bi-chevron-right ms-2 small"></i>
                     </button>
                 </div>
             </form>
@@ -548,5 +558,24 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 });
             }
         });
+        (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Oops...',
+                    text: 'Harap lengkapi semua data sebelum menyimpan!',
+                    confirmButtonColor: '#0E5CAD'
+                });
+            }
+            form.classList.add('was-validated')
+            }, false)
+        })
+        })()
     </script>
 <?php endif; ?>

@@ -1,24 +1,21 @@
 <?php
 declare(strict_types=1);
 
-// PENTING: session_start() harus diletakkan di baris paling atas sebelum ada output HTML apa pun
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
 
-// Pastikan file koneksi.php ada dan dapat diakses
 $koneksiPath = __DIR__ . DIRECTORY_SEPARATOR . "koneksi" . DIRECTORY_SEPARATOR . "koneksi.php";
 if (file_exists($koneksiPath)) {
     require_once $koneksiPath;
 } else {
-    die("File koneksi database tidak ditemukan. Harap periksa konfigurasi.");
+    die("File koneksi database tidak ditemukan.");
 }
 
 date_default_timezone_set('Asia/Jakarta');
 
-// Fetch company profile data
 $profile = null;
 if (isset($koneksi) && $koneksi instanceof mysqli) { 
     $result = $koneksi->query("SELECT * FROM tb_profile LIMIT 1");
@@ -28,7 +25,7 @@ if (isset($koneksi) && $koneksi instanceof mysqli) {
         $profile = ['nama_perusahaan' => 'Perusahaan Default', 'foto' => 'default-logo.png', 'foto2' => 'default-image.png'];
     }
 } else {
-    $profile = ['nama_perusahaan' => 'Perusahaan Default (Koneksi Gagal)', 'foto' => 'default-logo.png', 'foto2' => 'default-image.png'];
+    $profile = ['nama_perusahaan' => 'Perusahaan Default', 'foto' => 'default-logo.png', 'foto2' => 'default-image.png'];
 }
 
 $currentDay = mktime(0, 0, 0, (int)date("n"), (int)date("j"), (int)date("Y"));
@@ -47,8 +44,6 @@ function tglIndonesia(string $str): string {
 }
 
 $currentPage = $_GET['page'] ?? 'beranda';
-
-// PANGGIL FILE isi.php DI ATAS SINI AGAR LOGIKA POST & REDIRECT BERJALAN SEBELUM HTML DIRENDER
 $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
 ?>
 <!DOCTYPE html>
@@ -56,9 +51,9 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buku Tamu Diskominfo Lahat - <?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Perusahaan') ?></title>
+    <title>Buku Tamu Diskominfo - <?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Perusahaan') ?></title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
@@ -67,32 +62,21 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
 
     <style>
         :root {
-            --bright-gradient-start: rgb(121, 147, 241);
-            --bright-gradient-end: rgb(61, 64, 153);
-            --bright-gradient-alt-start: #FF9A70;
-            --bright-gradient-alt-end: #FD5E53;
             --primary-color: #0E5CAD;
             --accent-color: #FF9A70;
             --neutral-lightest: #F8F9FA;
             --neutral-lighter: #E9ECEF;
             --neutral-light: #DEE2E6;
-            --neutral-medium: #CED4DA;
             --neutral-dark: #495057;
             --neutral-darker: #343A40;
-            --neutral-darkest: #212529;
-            --gradient-main: linear-gradient(135deg, var(--bright-gradient-start) 0%, var(--bright-gradient-end) 100%);
-            --gradient-accent: linear-gradient(135deg, var(--bright-gradient-alt-start) 0%, var(--bright-gradient-alt-end) 100%);
-            --gradient-border: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-            --primary-gradient: var(--gradient-main);
+            --gradient-main: linear-gradient(135deg, rgb(121, 147, 241) 0%, rgb(61, 64, 153) 100%);
+            --gradient-accent: linear-gradient(135deg, #FF9A70 0%, #FD5E53 100%);
             --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.08);
             --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.1);
             --shadow-strong: 0 12px 35px rgba(0, 0, 0, 0.12);
-            --radius-sm: 0.375rem;
             --radius-md: 0.75rem;
             --radius-lg: 1.25rem;
-            --radius-xl: 2rem;
             --radius-full: 9999px;
-            --transition-fast: all 0.2s ease-in-out;
             --transition-medium: all 0.35s ease-in-out;
         }
         body {
@@ -100,88 +84,85 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
             background-color: var(--neutral-lightest);
             color: var(--neutral-darker);
             line-height: 1.7;
-            font-weight: 400;
         }
         .app-container {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden;
         }
         .app-header {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             box-shadow: var(--shadow-soft);
-            padding: 1rem 0;
+            padding: 0.75rem 0;
             border-bottom: 1px solid var(--neutral-light);
             position: sticky;
             top: 0;
             z-index: 1000;
-            overflow: hidden;
         }
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 1;
+            gap: 1rem;
         }
         .logo-container {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            text-decoration: none;
         }
         .company-logo {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             object-fit: contain;
             border-radius: var(--radius-md);
             border: 2px solid var(--primary-color);
-            box-shadow: var(--shadow-soft);
         }
         .logo-badge {
-            width: 58px;
-            height: 58px;
-            border-radius: 18px;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: rgba(78, 115, 223, 0.12);
-            border: 1px solid rgba(78, 115, 223, 0.25);
+            background: rgba(14, 92, 173, 0.1);
+            border: 1px solid rgba(14, 92, 173, 0.2);
         }
         .company-title h1 {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--primary-color);
-        }
-        .company-title small {
-            font-size: 0.8rem;
-            color: var(--neutral-dark);
-            font-weight: 500;
+            margin-bottom: 0;
         }
         .header-chip {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.35rem 0.85rem;
+            gap: 0.4rem;
+            padding: 0.2rem 0.6rem;
             border-radius: 999px;
-            background: rgba(78, 115, 223, 0.12);
-            color: #1e3a8a;
-            font-size: 0.75rem;
+            background: rgba(14, 92, 173, 0.1);
+            color: var(--primary-color);
+            font-size: 0.7rem;
             font-weight: 600;
+        }
+        /* Perbaikan Tombol Navigasi Atas agar Rapinya Pas dan Sejajar */
+        .menu-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
         .menu-actions .btn {
             border-radius: var(--radius-full);
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.82rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
             transition: var(--transition-medium);
             box-shadow: var(--shadow-soft);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
+            white-space: nowrap;
         }
         .menu-actions .btn-gradient {
             background: var(--gradient-main);
@@ -191,6 +172,11 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
         .menu-actions .btn-outline-dynamic {
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
+            background: #fff;
+        }
+        .menu-actions .btn-outline-dynamic:hover, .menu-actions .btn-gradient:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
         .main-content {
             flex: 1;
@@ -211,12 +197,9 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
             color: white;
             border-radius: var(--radius-lg);
             padding: 2.5rem;
-            position: relative;
-            overflow: hidden;
-            height: 100%;
+            box-shadow: var(--shadow-strong);
             display: flex;
             flex-direction: column;
-            box-shadow: var(--shadow-strong);
         }
         .form-section {
             background: white;
@@ -245,29 +228,10 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
             color: var(--primary-color);
         }
         .app-footer {
-            padding: 2.25rem 0 2rem;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 2rem 0;
+            background: #0f172a;
             color: #e2e8f0;
-            font-size: 0.875rem;
-            border-top: 1px solid rgba(148, 163, 184, 0.2);
-        }
-        .app-footer .footer-inner {
-            display: grid;
-            gap: 1.5rem;
-            align-items: center;
-        }
-        .app-footer .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-        }
-        .app-footer .footer-logo {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            object-fit: contain;
-            background: rgba(255, 255, 255, 0.08);
-            padding: 6px;
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -275,46 +239,42 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
     <header class="app-header">
         <div class="container">
             <div class="header-content">
-                <a href="index.php" class="logo-container text-decoration-none">
+                <a href="index.php" class="logo-container">
                     <span class="logo-badge">
-                        <img src="admin/images/<?= htmlspecialchars($profile['foto'] ?? 'default-logo.png') ?>" alt="Company Logo" class="company-logo">
+                        <img src="admin/images/<?= htmlspecialchars($profile['foto'] ?? 'default-logo.png') ?>" alt="Logo" class="company-logo">
                     </span>
-                    <div class="company-title">
-                        <div class="header-chip mb-2">
-                            <i class="bi bi-stars"></i>
-                            Layanan Publik Digital
+                    <div>
+                        <div class="header-chip mb-1">
+                            <i class="bi bi-stars"></i> Layanan Publik
                         </div>
-                        <h1 class="mb-0"><?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Perusahaan') ?></h1>
+                        <h1><?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Instansi') ?></h1>
                     </div>
                 </a>
 
-                <div class="d-flex flex-column flex-sm-row align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
                     <div class="clock-info d-none d-md-block text-end">
-                        <div class="date-display small text-muted"><?= tglIndonesia(date('D, d F Y', $currentDay)) ?></div>
-                        <div id="clock" class="clock-display d-inline-flex align-items-center gap-1 fw-bold text-primary">
-                            <i class="bi bi-clock"></i>
-                            <span class="time"></span>
+                        <div class="small text-muted"><?= tglIndonesia(date('D, d F Y', $currentDay)) ?></div>
+                        <div id="clock" class="fw-bold text-primary small">
+                            <i class="bi bi-clock"></i> <span class="time"></span>
                         </div>
                     </div>
 
-                    <div class="menu-actions d-flex gap-2">
-                        <!-- Tombol Baru untuk melihat Ketersediaan Pegawai -->
+                    <!-- Tombol Navigasi Atas -->
+                    <div class="menu-actions">
                         <a href="?page=ketersediaan" class="btn btn-outline-dynamic">
                             <i class="bi bi-grid-3x3-gap-fill"></i>
                             <span class="d-none d-sm-inline">Cek Pegawai</span>
                         </a>
 
-                        <?php if ($currentPage === "spk"): ?>
-                            <a href="index.php" class="btn btn-outline-dynamic">
-                                <i class="bi bi-person-plus-fill"></i>
-                                <span class="d-none d-sm-inline">Register Tamu</span>
-                            </a>
-                        <?php else: ?>
-                            <a href="?page=spk" class="btn btn-gradient">
-                                <i class="bi bi-star-fill"></i>
-                                <span class="d-none d-sm-inline">Indeks Kepuasan</span>
-                            </a>
-                        <?php endif; ?>
+                        <a href="struktur.php" class="btn btn-outline-dynamic">
+                            <i class="bi bi-diagram-3-fill"></i>
+                            <span class="d-none d-sm-inline">Struktur Organisasi</span>
+                        </a>
+
+                        <a href="?page=spk" class="btn btn-gradient">
+                            <i class="bi bi-star-fill"></i>
+                            <span class="d-none d-sm-inline">Indeks Kepuasan</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -325,16 +285,14 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
         <div class="container">
             <div class="content-grid">
                 <section class="welcome-section animate__animated animate__fadeInLeft">
-                    <div class="welcome-content">
-                        <span class="badge mb-3 bg-white bg-opacity-20 text-white align-self-start">
-                            <i class="bi bi-stars"></i> Selamat Datang!
-                        </span>
-                        <h2 class="display-5 mb-3 fw-bold">Buku Tamu <?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Instansi Kami') ?></h2>
-                        <p class="lead mb-4 opacity-90"><?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Instansi Kami') ?> senang menyambut Anda. Silakan isi data diri Anda pada formulir di samping untuk keperluan dokumentasi dan pelayanan yang lebih baik.</p>
-                        
-                        <div class="mt-auto text-center pt-4">
-                            <img src="admin/images/<?= htmlspecialchars($profile['foto2'] ?? 'default-image.png') ?>" alt="Welcome Illustration" class="img-fluid" style="max-height: 200px; object-fit:contain;">
-                        </div>
+                    <span class="badge mb-3 bg-white bg-opacity-20 text-white align-self-start">
+                        <i class="bi bi-stars"></i> Selamat Datang!
+                    </span>
+                    <h2 class="display-6 mb-3 fw-bold">Buku Tamu <?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Instansi') ?></h2>
+                    <p class="lead mb-4 opacity-90 fs-6">Silakan isi data diri Anda pada formulir di samping untuk keperluan dokumentasi dan pelayanan yang lebih baik.</p>
+                    
+                    <div class="mt-auto text-center pt-3">
+                        <img src="admin/images/<?= htmlspecialchars($profile['foto2'] ?? 'default-image.png') ?>" alt="Illustration" class="img-fluid" style="max-height: 180px; object-fit:contain;">
                     </div>
                 </section>
 
@@ -354,11 +312,10 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
                     </div>
 
                     <?php
-                    // Memuat file isi.php yang berisi form dan logika pemrosesan
                     if (file_exists($isiPath)) {
                         include $isiPath;
                     } else {
-                        echo '<div class="alert alert-warning" role="alert">Konten formulir (isi.php) tidak ditemukan.</div>';
+                        echo '<div class="alert alert-warning">Formulir tidak ditemukan.</div>';
                     }
                     ?>
                 </section>
@@ -367,64 +324,24 @@ $isiPath = __DIR__ . DIRECTORY_SEPARATOR . "isi.php";
     </main>
 
     <footer class="app-footer">
-        <div class="container">
-            <div class="footer-inner">
-                <div class="footer-brand">
-                    <img src="admin/images/<?= htmlspecialchars($profile['foto'] ?? 'default-logo.png') ?>" alt="Logo" class="footer-logo">
-                    <div>
-                        <div class="footer-title fw-bold text-white"><?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Buku Tamu Digital') ?></div>
-                        <div class="footer-subtitle text-muted small">Buku Tamu Digital • Layanan Publik Terpadu</div>
-                    </div>
-                </div>
-            </div>
+        <div class="container text-center">
+            <div class="fw-bold text-white"><?= htmlspecialchars($profile['nama_perusahaan'] ?? 'Buku Tamu Digital') ?></div>
+            <div class="text-muted small">Buku Tamu Digital • Layanan Publik Terpadu</div>
         </div>
     </footer>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        // Realtime Clock Script
         function updateClock() {
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
-
+            const timeString = now.toTimeString().split(' ')[0];
             const clockElement = document.querySelector('#clock .time');
             if (clockElement) clockElement.textContent = timeString;
         }
         setInterval(updateClock, 1000);
         updateClock();
-
-        // SweetAlert Handler for Session Messages
-        $(document).ready(function() {
-            <?php
-            if (isset($_SESSION['sukses'])) {
-                echo "Swal.fire({
-                    title: 'Berhasil!',
-                    text: '" . addslashes($_SESSION['sukses']) . "',
-                    icon: 'success',
-                    confirmButtonColor: '#0E5CAD',
-                    timer: 3500
-                });";
-                unset($_SESSION['sukses']);
-            }
-            if (isset($_SESSION['gagal'])) {
-                echo "Swal.fire({
-                    title: 'Gagal!',
-                    text: '" . addslashes($_SESSION['gagal']) . "',
-                    icon: 'error',
-                    confirmButtonColor: '#FD5E53',
-                    timer: 4000
-                });";
-                unset($_SESSION['gagal']);
-            }
-            ?>
-        });
     </script>
 </body>
 </html>
