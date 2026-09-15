@@ -307,8 +307,8 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
             ?>
         </div>
 
-        <div class="text-center mt-5">
-            <a href="index.php" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm" style="background: var(--primary-gradient); border: none;">
+        <a href="index.php" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm text-white" style="background: var(--gradient-main); border: none;">
+            
                 <i class="bi bi-pencil-square me-2"></i> Isi Buku Tamu Sekarang
             </a>
         </div>
