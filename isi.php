@@ -191,16 +191,19 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
 
         <div class="card-body p-4 p-md-5">
             <form id="formKepuasan" method="POST" action="index.php?page=spk">
-                <input type="hidden" name="submit_kepuasan" value="1"> 
-                if (isset($_SESSION['gagal'])) {
-    echo '<div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> ' . $_SESSION['gagal'] . '
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-    unset($_SESSION['gagal']); // Hapus pesan setelah ditampilkan
-}
+<input type="hidden" name="submit_kepuasan" value="1"> 
                 
-                <div class="mb-4">
+    <?php
+    if (isset($_SESSION['gagal'])) {
+        echo '<div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ' . $_SESSION['gagal'] . '
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>';
+        unset($_SESSION['gagal']); // Hapus pesan setelah ditampilkan
+    }
+    ?>
+                    
+                    <div class="mb-4">
                     <label class="form-label small fw-bold text-uppercase text-muted">Identitas Anda</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted ps-3"><i class="bi bi-person-circle"></i></span>
