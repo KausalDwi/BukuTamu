@@ -1,10 +1,6 @@
 <?php
 session_start();
-
 require_once __DIR__ . '/../koneksi/koneksi.php';
-require_once __DIR__ . '/../vendor/autoload.php';
-
-use Mpdf\Mpdf;
 
 // Cek apakah admin sudah login
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -12,162 +8,128 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit("Akses ditolak. Silakan login terlebih dahulu.");
 }
 
-// Ambil data tamu
-$sql_export_tamu = "SELECT 
-                        id_tamu, 
-                        tanggal_kunjungan, 
-                        waktu_masuk, 
-                        nama_tamu, 
-                        asal_instansi, 
-                        jabatan, 
-                        no_telepon, 
-                        email_tamu, 
-                        bertemu_dengan, 
-                        keperluan, 
-                        catatan_tambahan, 
-                        status_keluar, 
-                        waktu_keluar,
-                        created_at
-                    FROM tb_tamu 
-                    ORDER BY tanggal_kunjungan DESC, waktu_masuk DESC";
+// 1. JIKA ADA ID: CETAK DETAIL SATU TAMU
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $sql = "SELECT * FROM tb_tamu WHERE id = ?";
+    $stmt = $koneksi->prepare($sql);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = $result->fetch_assoc();
+    
+    if (!$data) {
+        exit("Data tamu tidak ditemukan.");
+    }
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <title>Cetak Detail Tamu - <?php echo htmlspecialchars($data['nama_tamu']); ?></title>
+        <style>
+            body { font-family: 'Arial', sans-serif; padding: 20px; color: #333; }
+            .print-container { max-width: 700px; margin: 0 auto; border: 2px solid #0E5CAD; padding: 30px; border-radius: 10px; }
+            .header { text-align: center; border-bottom: 2px solid #0E5CAD; padding-bottom: 15px; margin-bottom: 20px; }
+            .header h2 { margin: 0; color: #0E5CAD; font-size: 24px; text-transform: uppercase; }
+            .header p { margin: 5px 0 0; color: #555; }
+            .detail-table { width: 100%; border-collapse: collapse; }
+            .detail-table th, .detail-table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+            .detail-table th { width: 35%; background-color: #f4f7fb; color: #333; }
+            .ttd-box { margin-top: 40px; text-align: right; font-size: 14px; }
+            
+            /* Sembunyikan elemen yang tidak perlu saat di-print */
+            @media print {
+                body { padding: 0; }
+                .print-container { border: none; padding: 0; }
+            }
+        </style>
+    </head>
+    <body onload="window.print()">
+        <div class="print-container">
+            <div class="header">
+                <h2>BUKU TAMU DIGITAL</h2>
+                <p>Dinas Komunikasi dan Informatika</p>
+            </div>
+            
+            <h4 style="text-align: center; margin-bottom: 20px;">BUKTI KUNJUNGAN TAMU</h4>
+            
+            <table class="detail-table">
+                <tr><th>ID Kunjungan</th><td><strong>#<?php echo str_pad($data['id'], 4, '0', STR_PAD_LEFT); ?></strong></td></tr>
+                <tr><th>Nama Lengkap</th><td><?php echo htmlspecialchars($data['nama_tamu']); ?></td></tr>
+                <tr><th>Asal Instansi</th><td><?php echo htmlspecialchars($data['asal_instansi'] ?: 'Umum/Pribadi'); ?></td></tr>
+                <tr><th>Jabatan</th><td><?php echo htmlspecialchars($data['jabatan'] ?: '-'); ?></td></tr>
+                <tr><th>Waktu Kedatangan</th><td><?php echo date('d M Y', strtotime($data['tanggal_kunjungan'])); ?> (<?php echo substr($data['waktu_masuk'], 0, 5); ?> WIB)</td></tr>
+                <tr><th>Bertemu Dengan</th><td><?php echo htmlspecialchars($data['bertemu_dengan']); ?></td></tr>
+                <tr><th>Keperluan</th><td><?php echo htmlspecialchars($data['keperluan']); ?></td></tr>
+                <tr><th>Status Kunjungan</th><td><?php echo htmlspecialchars($data['status_keluar']); ?></td></tr>
+            </table>
+            
+            <div class="ttd-box">
+                <p>Dicetak pada: <?php echo date('d-m-Y H:i'); ?></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
+// 2. JIKA TIDAK ADA ID: CETAK SEMUA DATA (TABEL)
+$sql_export_tamu = "SELECT * FROM tb_tamu ORDER BY tanggal_kunjungan DESC, waktu_masuk DESC";
 $result_export = $koneksi->query($sql_export_tamu);
-if ($result_export === false) {
-    error_log("Gagal query ekspor data tamu (PDF): " . $koneksi->error);
-    exit("Terjadi kesalahan saat mengambil data tamu.");
-}
-
-$export_time = date('d-m-Y H:i:s');
-$rows = [];
-while ($row = $result_export->fetch_assoc()) {
-    $rows[] = $row;
-}
-$result_export->free();
-if (isset($koneksi) && $koneksi instanceof mysqli) {
-    $koneksi->close();
-}
-
-$html = '<!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Ekspor PDF - Data Tamu</title>
+    <title>Cetak Semua Data Tamu</title>
     <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: "Poppins", Arial, sans-serif;
-            color: #1f2937;
-            margin: 0;
-            padding: 0;
-        }
-        .export-header {
-            border-bottom: 2px solid #0E5CAD;
-            padding-bottom: 10px;
-            margin-bottom: 14px;
-        }
-        .table-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 10px 0 6px;
-        }
-        .export-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0E5CAD;
-        }
-        .export-subtitle {
-            font-size: 11px;
-            color: #6b7280;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-        }
-        thead th {
-            background: #0E5CAD;
-            color: #fff;
-            padding: 6px;
-            text-align: left;
-            border: 1px solid #0E5CAD;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        tbody td {
-            border: 1px solid #d7e3f2;
-            padding: 6px;
-            vertical-align: top;
-        }
-        tbody tr:nth-child(even) td {
-            background: #f4f7fb;
-        }
-        .text-center { text-align: center; }
-        .status-masuk { color: #198754; font-weight: 600; }
-        .status-keluar { color: #dc3545; font-weight: 600; }
+        body { font-family: 'Arial', sans-serif; padding: 20px; font-size: 11px; color: #333; }
+        h2 { text-align: center; color: #0E5CAD; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #555; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #aaa; padding: 8px; text-align: left; }
+        th { background-color: #0E5CAD; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
     </style>
 </head>
-<body>
-    <div class="export-header">
-        <div class="export-title">Data Kunjungan Tamu</div>
-        <div class="export-subtitle">Diekspor pada: ' . htmlspecialchars($export_time) . '</div>
-    </div>
-    <div class="table-title">Tabel Data Kunjungan Tamu</div>
+<body onload="window.print()">
+    <h2>LAPORAN DATA KUNJUNGAN TAMU</h2>
+    <p class="subtitle">Waktu Cetak: <?php echo date('d-m-Y H:i:s'); ?></p>
     <table>
         <thead>
             <tr>
-                <th class="text-center" style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">No</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Tanggal</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Waktu</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Nama</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Instansi</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Jabatan</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Telepon</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Email</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Bertemu</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Keperluan</th>
-                <th style="background:#0E5CAD;color:#ffffff;border:1px solid #0E5CAD;font-weight:600;padding:6px;text-align:left;white-space:nowrap;">Status</th>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Waktu</th>
+                <th>Nama Tamu</th>
+                <th>Instansi</th>
+                <th>Bertemu</th>
+                <th>Keperluan</th>
+                <th>Status</th>
             </tr>
         </thead>
-        <tbody>';
-
-$no = 1;
-foreach ($rows as $row) {
-    $tanggal = $row['tanggal_kunjungan'] ? date('d-m-Y', strtotime($row['tanggal_kunjungan'])) : '';
-    $waktu = $row['waktu_masuk'] ? substr($row['waktu_masuk'], 0, 5) : '';
-    $statusClass = ($row['status_keluar'] === 'Keluar') ? 'status-keluar' : 'status-masuk';
-
-    $html .= '<tr>
-        <td class="text-center">' . $no++ . '</td>
-        <td>' . htmlspecialchars($tanggal) . '</td>
-        <td class="text-center">' . htmlspecialchars($waktu) . '</td>
-        <td>' . htmlspecialchars($row['nama_tamu']) . '</td>
-        <td>' . htmlspecialchars($row['asal_instansi']) . '</td>
-        <td>' . htmlspecialchars($row['jabatan']) . '</td>
-        <td>' . htmlspecialchars($row['no_telepon']) . '</td>
-        <td>' . htmlspecialchars($row['email_tamu']) . '</td>
-        <td>' . htmlspecialchars($row['bertemu_dengan']) . '</td>
-        <td>' . htmlspecialchars($row['keperluan']) . '</td>
-        <td class="' . $statusClass . '">' . htmlspecialchars($row['status_keluar']) . '</td>
-    </tr>';
-}
-
-$html .= '</tbody></table></body></html>';
-
-try {
-    $mpdf = new Mpdf([
-        'format' => 'A4-L',
-        'margin_left' => 10,
-        'margin_right' => 10,
-        'margin_top' => 12,
-        'margin_bottom' => 12
-    ]);
-    $mpdf->WriteHTML($html);
-
-    $filename = 'daftar_tamu_' . date('Ymd_His') . '.pdf';
-    $mpdf->Output($filename, 'D');
-} catch (\Throwable $e) {
-    error_log("Gagal membuat PDF: " . $e->getMessage());
-    exit("Gagal membuat file PDF. Silakan coba lagi.");
-}
-?>
+        <tbody>
+            <?php
+            $no = 1;
+            while ($row = $result_export->fetch_assoc()) {
+                $tanggal = date('d-m-Y', strtotime($row['tanggal_kunjungan']));
+                $waktu = substr($row['waktu_masuk'], 0, 5);
+                echo "<tr>
+                    <td>{$no}</td>
+                    <td>{$tanggal}</td>
+                    <td>{$waktu}</td>
+                    <td>" . htmlspecialchars($row['nama_tamu']) . "</td>
+                    <td>" . htmlspecialchars($row['asal_instansi']) . "</td>
+                    <td>" . htmlspecialchars($row['bertemu_dengan']) . "</td>
+                    <td>" . htmlspecialchars($row['keperluan']) . "</td>
+                    <td>" . htmlspecialchars($row['status_keluar']) . "</td>
+                </tr>";
+                $no++;
+            }
+            ?>
+        </tbody>
+    </table>
+</body>
+</html>

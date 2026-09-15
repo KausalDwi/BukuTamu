@@ -16,10 +16,10 @@ $success_message = '';
 
 if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     $id_tamu_to_edit = $_GET['id'];
-    // Fetch data tamu yang akan diupdate waktu keluarnya
-    $sql_get_tamu = "SELECT id_tamu, nama_tamu, tanggal_kunjungan, waktu_masuk, keperluan, status_keluar, waktu_keluar 
+    // Fetch data tamu yang akan diupdate waktu keluarnya (Perbaikan id_tamu menjadi id)
+    $sql_get_tamu = "SELECT id, nama_tamu, tanggal_kunjungan, waktu_masuk, keperluan, status_keluar, waktu_keluar 
                      FROM tb_tamu 
-                     WHERE id_tamu = ?";
+                     WHERE id = ?";
     if ($stmt_get = $koneksi->prepare($sql_get_tamu)) {
         $stmt_get->bind_param("i", $id_tamu_to_edit);
         $stmt_get->execute();
@@ -66,7 +66,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if (empty($errors)) {
-        $sql_update = "UPDATE tb_tamu SET status_keluar = ?, waktu_keluar = ? WHERE id_tamu = ?";
+        // Perbaikan id_tamu menjadi id
+        $sql_update = "UPDATE tb_tamu SET status_keluar = ?, waktu_keluar = ? WHERE id = ?";
         
         if ($stmt_update = $koneksi->prepare($sql_update)) {
             $stmt_update->bind_param("ssi", 
@@ -104,7 +105,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="css/admin-style.css" rel="stylesheet">
-    <style>
 </head>
 <body>
     <?php

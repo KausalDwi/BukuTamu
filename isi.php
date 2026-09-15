@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['nama_tamu'])) {
     $jabatan = htmlspecialchars(trim($_POST['jabatan'] ?? ''));
     $no_telepon = htmlspecialchars(trim($_POST['no_telepon'] ?? ''));
     $email_tamu = htmlspecialchars(trim($_POST['email_tamu'] ?? ''));
-    $bertemu_dengan = htmlspecialchars(trim($_POST['bertemu_dengan'] ?? '')); // Ini sekarang berisi nama_pegawai dari dropdown
+    $bertemu_dengan = htmlspecialchars(trim($_POST['bertemu_dengan'] ?? ''));
     $keperluan = htmlspecialchars(trim($_POST['keperluan'] ?? ''));
     $catatan_tambahan = htmlspecialchars(trim($_POST['catatan_tambahan'] ?? ''));
     
@@ -123,7 +123,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['nama_tamu'])) {
         }
     }
 
-    // Simpan data inputan lama jika ada error
     if (!empty($_SESSION['gagal'])) {
         $_SESSION['old_tamu'] = $_POST;
     } else {
@@ -192,15 +191,26 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
 
         <div class="card-body p-4 p-md-5">
             <form id="formKepuasan" method="POST" action="index.php?page=spk">
-                <input type="hidden" name="submit_kepuasan" value="1"> 
+<input type="hidden" name="submit_kepuasan" value="1"> 
                 
-                <div class="mb-4">
+    <?php
+    if (isset($_SESSION['gagal'])) {
+        echo '<div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ' . $_SESSION['gagal'] . '
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>';
+        unset($_SESSION['gagal']); // Hapus pesan setelah ditampilkan
+    }
+    ?>
+                    
+                    <div class="mb-4">
                     <label class="form-label small fw-bold text-uppercase text-muted">Identitas Anda</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted ps-3"><i class="bi bi-person-circle"></i></span>
                         <input type="text" class="form-control bg-light border-start-0 py-3" name="nama_responden" placeholder="Nama Anda (Opsional)">
                     </div>
                 </div>
+
 
                 <div class="row g-3 mb-4">
                      <?php 
@@ -236,15 +246,75 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-sm">KIRIM SURVEI</button>
+                    <button type="submit" name="submit_tamu" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm" style="background: var(--primary-gradient); border: none;">
+                        <i class="bi bi-send-fill me-2"></i> Kirim Kunjungan
+                    </button>
                     <a href="index.php" class="btn btn-link text-muted mt-3 text-decoration-none small text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Form Tamu</a>
                 </div>
             </form>
         </div>
     </div>
 
-<?php else: ?>
+<?php elseif (isset($_GET['page']) && $_GET['page'] === 'ketersediaan'): ?>
+    
+    <!-- TAMPILAN GRID KETERSEDIAAN PEGAWAI -->
+    <div class="card card-tamu shadow-lg rounded-4 overflow-hidden border-0 bg-transparent">
+        <div class="card-header bg-white border-bottom pt-4 pb-3 text-center rounded-top-4 shadow-sm mb-4">
+            <h5 class="mb-0 fw-bold text-dark text-uppercase">Informasi Kehadiran Pegawai</h5>
+            <p class="small text-muted mb-0">Cek status pegawai sebelum mengisi buku tamu</p>
+        </div>
 
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 g-4">
+            <?php
+            if (isset($koneksi) && $koneksi instanceof mysqli) {
+                $q_pegawai = $koneksi->query("SELECT p.*, d.nama_divisi FROM pegawai p JOIN divisi d ON p.id_divisi = d.id_divisi ORDER BY d.nama_divisi, p.nama_pegawai");
+                
+                if ($q_pegawai && $q_pegawai->num_rows > 0) {
+                    while($p = $q_pegawai->fetch_assoc()):
+                        $is_hadir = ($p['status_hadir'] === 'Hadir');
+                        $is_bisa_tamu = ($p['terima_tamu'] === 'Ya');
+                        
+                        $border_color = $is_hadir ? 'border-success' : 'border-secondary';
+                        $bg_color = $is_hadir ? 'bg-white' : 'bg-light';
+                        $text_status = $is_hadir ? 'Ada di Kantor' : 'Tidak di Tempat';
+                        $icon_status = $is_hadir ? '<i class="bi bi-check-circle-fill text-success fs-5"></i>' : '<i class="bi bi-x-circle-fill text-secondary fs-5"></i>';
+                    ?>
+                    <div class="col">
+                        <div class="card h-100 <?= $border_color ?> <?= $bg_color ?> shadow-sm" style="border-width: 2px;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-title fw-bold mb-0"><?= htmlspecialchars($p['nama_pegawai']) ?></h6>
+                                    <?= $icon_status ?>
+                                </div>
+                                <p class="card-text small text-muted mb-3"><i class="bi bi-diagram-3 me-1"></i> <?= htmlspecialchars($p['nama_divisi']) ?></p>
+                                
+                                <?php if ($is_hadir && $is_bisa_tamu): ?>
+                                    <span class="badge bg-primary rounded-pill w-100 py-2">Bisa Menerima Tamu</span>
+                                <?php elseif ($is_hadir && !$is_bisa_tamu): ?>
+                                    <span class="badge bg-danger rounded-pill w-100 py-2">Sedang Sibuk / Rapat</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary rounded-pill w-100 py-2">Tidak Tersedia</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php 
+                    endwhile;
+                } else {
+                    echo '<div class="col-12"><div class="alert alert-info border-0 shadow-sm text-center">Belum ada data pegawai.</div></div>';
+                }
+            }
+            ?>
+        </div>
+
+        <a href="index.php" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm text-white" style="background: var(--gradient-main); border: none;">
+            
+                <i class="bi bi-pencil-square me-2"></i> Isi Buku Tamu Sekarang
+            </a>
+        </div>
+    </div>
+
+<?php else: ?>
     <!-- TAMPILAN FORM REGISTRASI TAMU -->
     <div class="card card-tamu shadow-lg rounded-4 overflow-hidden border-0">
         <div class="card-header bg-white border-bottom pt-4 pb-3 text-center">
@@ -366,8 +436,8 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 </div>
 
                 <div class="d-grid gap-3">
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-lg" style="background: var(--primary-gradient); border: none;">
-                        SIMPAN BUKU TAMU <i class="bi bi-chevron-right ms-2 small"></i>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3 fw-bold shadow-lg text-white" style="background: var(--primary-color); border: none;">
+                        <i class="bi bi-send-fill me-2"></i> SIMPAN BUKU TAMU <i class="bi bi-chevron-right ms-2 small"></i>
                     </button>
                 </div>
             </form>
@@ -379,40 +449,36 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
         document.addEventListener('DOMContentLoaded', function () {
             
             // --- LOGIKA DROPDOWN DINAMIS ---
-            // Data pegawai dari PHP di-passing ke JavaScript
             const dataPegawai = <?= json_encode($pegawai_list) ?>;
             const selectDivisi = document.getElementById('pilih_divisi');
             const selectPegawai = document.getElementById('bertemu_dengan');
 
-            selectDivisi.addEventListener('change', function() {
-                const idDivisiTerpilih = this.value;
-                
-                // Kosongkan opsi pegawai
-                selectPegawai.innerHTML = '<option value="" disabled selected>Pilih Pegawai...</option>';
-                
-                // Filter pegawai berdasarkan divisi
-                const pegawaiDifilter = dataPegawai.filter(p => p.id_divisi == idDivisiTerpilih);
+            if(selectDivisi && selectPegawai) {
+                selectDivisi.addEventListener('change', function() {
+                    const idDivisiTerpilih = this.value;
+                    
+                    selectPegawai.innerHTML = '<option value="" disabled selected>Pilih Pegawai...</option>';
+                    const pegawaiDifilter = dataPegawai.filter(p => p.id_divisi == idDivisiTerpilih);
 
-                if (pegawaiDifilter.length > 0) {
-                    pegawaiDifilter.forEach(p => {
+                    if (pegawaiDifilter.length > 0) {
+                        pegawaiDifilter.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.nama_pegawai; 
+                            opt.textContent = p.nama_pegawai;
+                            selectPegawai.appendChild(opt);
+                        });
+                        selectPegawai.disabled = false;
+                    } else {
                         const opt = document.createElement('option');
-                        // Menyimpan nama pegawai (atau ubah ke id_pegawai jika database tb_tamu diperbarui)
-                        opt.value = p.nama_pegawai; 
-                        opt.textContent = p.nama_pegawai;
+                        opt.value = "";
+                        opt.disabled = true;
+                        opt.selected = true;
+                        opt.textContent = "-- Tidak ada pegawai di kantor --";
                         selectPegawai.appendChild(opt);
-                    });
-                    selectPegawai.disabled = false;
-                } else {
-                    const opt = document.createElement('option');
-                    opt.value = "";
-                    opt.disabled = true;
-                    opt.selected = true;
-                    opt.textContent = "-- Tidak ada pegawai di kantor --";
-                    selectPegawai.appendChild(opt);
-                    selectPegawai.disabled = true;
-                }
-            });
-
+                        selectPegawai.disabled = true;
+                    }
+                });
+            }
 
             // --- LOGIKA KAMERA ---
             const startBtn = document.getElementById('btnMulaiKamera');
@@ -427,6 +493,7 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
             let streamHandle = null;
 
             function setWidgetState(state) {
+                if(!placeholder) return;
                 placeholder.classList.add('d-none');
                 videoEl.classList.add('d-none');
                 snapshotImg.classList.add('d-none');
@@ -494,5 +561,24 @@ $old_tamu = $_SESSION['old_tamu'] ?? [];
                 });
             }
         });
+        (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Oops...',
+                    text: 'Harap lengkapi semua data sebelum menyimpan!',
+                    confirmButtonColor: '#0E5CAD'
+                });
+            }
+            form.classList.add('was-validated')
+            }, false)
+        })
+        })()
     </script>
 <?php endif; ?>
